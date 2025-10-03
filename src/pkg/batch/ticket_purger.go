@@ -26,7 +26,7 @@ func PurgeTickets(ctx context.Context, cfg pkg.Config) {
 		panic(err)
 	}
 	for _, v := range tick {
-		if v.CheckedIn == "false" {
+		if v.CheckedIn == "true" {
 			logger.Logger.Debug("Unchecking ticket", zap.Any("ticketId", v.ID))
 			tickets.CheckInTicket(ctx, ticketTailorConfig, v.ID, tickets.CheckOut)
 		}
