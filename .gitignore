@@ -1,0 +1,35 @@
+# Binaries for the current OS and architecture
+*.exe
+*.dll
+*.so
+*.dylib
+*.wasm
+
+# Build output directories
+/bin/
+/pkg/
+
+# Test output directories
+/testdata/
+
+# Dependency management
+# If you are using Go modules, these are typically not needed
+# as dependencies are managed within the module cache.
+# vendor/
+
+# IDE and editor specific files
+.idea/
+.vscode/
+*.swp
+*.bak
+*~
+.DS_Store
+
+# Log files
+*.log
+
+# Environment variables and configuration files
+.env
+.env.*
+config.local.json
+
