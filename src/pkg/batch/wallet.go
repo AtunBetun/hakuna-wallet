@@ -8,7 +8,7 @@ import (
 	"github.com/atunbetun/hakuna-wallet/pkg/tickets"
 )
 
-func BatchProcess(ctx context.Context, cfg pkg.Config) {
+func GenerateWalletTickets(ctx context.Context, cfg pkg.Config) {
 	ticketTailorConfig := tickets.TicketTailorConfig{
 		ApiKey:  cfg.TicketTailorAPIKey,
 		EventId: fmt.Sprint(cfg.TicketTailorEventId),
@@ -19,7 +19,7 @@ func BatchProcess(ctx context.Context, cfg pkg.Config) {
 		panic(err)
 	}
 
-	_, err = tickets.FetchTicketTailorOrders(ctx, ticketTailorConfig)
+	_, err = tickets.FetchIssuedTickets(ctx, ticketTailorConfig)
 	if err != nil {
 		panic(err)
 	}

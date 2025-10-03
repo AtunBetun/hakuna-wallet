@@ -30,6 +30,7 @@ func main() {
 	logger.Logger.Debug("configs parsed", zap.Any("cfg", cfg))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	batch.BatchProcess(ctx, cfg)
+	batch.PurgeTickets(ctx, cfg)
+	logger.Logger.Info("Success")
 
 }

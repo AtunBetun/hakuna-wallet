@@ -60,3 +60,14 @@ func (c *TicketTailorConfig) Validate() error {
 	}
 	return nil
 }
+
+type CheckInResponse struct {
+	Object         string `json:"object"`
+	ID             string `json:"id"`
+	CheckInAt      int64  `json:"check_in_at"`
+	CreatedAt      int64  `json:"created_at"`
+	EventID        string `json:"event_id"`
+	EventSeriesID  string `json:"event_series_id"`
+	IssuedTicketID string `json:"issued_ticket_id"`
+	Quantity       int    `json:"quantity"`
+}
