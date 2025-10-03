@@ -6,6 +6,7 @@ var Logger *zap.Logger
 
 func Init() {
 	cfg := zap.NewProductionConfig()
+	cfg.OutputPaths = []string{"stdout"}
 
 	// Enable debug level logs
 	cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
@@ -15,5 +16,4 @@ func Init() {
 		panic(err)
 	}
 	Logger = l
-	defer l.Sync()
 }

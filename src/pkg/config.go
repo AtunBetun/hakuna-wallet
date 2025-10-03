@@ -4,6 +4,7 @@ type Config struct {
 	// Ticket Tailor
 	TicketTailorAPIKey  string `env:"TICKETTAILOR_API_KEY,required"`
 	TicketTailorEventId int    `env:"TT_EVENT_ID,required"`
+	TicketTailorBaseUrl string `env:"TT_BASE_URL,required"`
 
 	// Database
 	DatabaseURL string `env:"DATABASE_URL,required"`

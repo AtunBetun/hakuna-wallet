@@ -3,7 +3,7 @@ BINARY_NAME=out
 # Run the binary
 run: build
 	@echo "Running..."
-	./$(BINARY_NAME)
+	./$(BINARY_NAME) | jq -c
 
 # Build the Go project
 build:

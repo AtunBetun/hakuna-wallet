@@ -4,64 +4,50 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"path"
 
 	"github.com/atunbetun/hakuna-wallet/pkg/logger"
 	"go.uber.org/zap"
 )
 
-// Simplified Ticket Tailor order structure (map fields to what you need)
-type TTOrder struct {
-	ID    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	QR    string `json:"qr"`
-}
-
-// FetchTicketTailorOrders - placeholder: replace with the real TT API call
-func FetchTicketTailorOrders(ctx context.Context, apiKey string, eventId string) ([]TTOrder, error) {
-	if apiKey == "" || eventId == "" {
-		return nil, fmt.Errorf("TICKETTAILOR_API_KEY or TT_EVENT_ID not set")
+func FetchTicketTailorOrders(ctx context.Context, config TicketTailorConfig) ([]TTIssuedTicket, error) {
+	if err := config.Validate(); err != nil {
+		return nil, err
 	}
 
-	// Example endpoint - Ticket Tailor API docs: adapt as needed
-	url := fmt.Sprintf("https://api.tickettailor.com/v1/issued_tickets?status=completed&event_id=%s", eventId)
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-	encodedApiKey := base64.StdEncoding.EncodeToString([]byte(apiKey))
-	req.Header.Set("Authorization", "Basic "+encodedApiKey)
-	client := http.DefaultClient
+	u, err := url.Parse(config.BaseUrl)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = path.Join(u.Path, "issued_tickets")
+	// u.RawQuery = url.Values{"event_id": {config.EventId}}.Encode()
 
-	resp, err := client.Do(req)
+	logger.Logger.Debug("TT Url", zap.Any("url", u.String()))
+
+	req, _ := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	encodedApiKey := base64.StdEncoding.EncodeToString([]byte(config.ApiKey))
+	req.Header.Set("Authorization", "Basic "+encodedApiKey)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	logger.Logger.Info("ticket tailor issued tickets", zap.Any("tickets", resp.Body))
 
-	var payload struct {
-		Orders []struct {
-			ID    string `json:"id"`
-			Email string `json:"email"`
-			Name  string `json:"name"`
-			// For demo, assume api gives a barcode string
-			Barcode string `json:"barcode"`
-		} `json:"orders"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 
-	logger.Logger.Info("parsed ticktets", zap.Any("tickets", payload))
-
-	out := make([]TTOrder, 0, len(payload.Orders))
-	for _, o := range payload.Orders {
-		out = append(out, TTOrder{
-			ID:    o.ID,
-			Email: o.Email,
-			Name:  o.Name,
-			QR:    o.Barcode,
-		})
+	var ttResp TTResponse
+	err = json.Unmarshal(body, &ttResp)
+	if err != nil {
+		return nil, err
 	}
-	return out, nil
+	logger.Logger.Debug("TT Issued Tickets", zap.Any("data", ttResp.Data))
+
+	return ttResp.Data, nil
 }
