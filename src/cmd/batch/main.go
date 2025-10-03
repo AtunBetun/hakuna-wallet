@@ -1,11 +1,11 @@
 package main
 
 import (
-	"go.uber.org/zap"
+	"github.com/atunbetun/hakuna-wallet/pkg/logger"
 )
 
 func main() {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-	logger.Info("Started")
+	logger.Init()
+	defer logger.Logger.Sync()
+	logger.Logger.Info("Started")
 }
