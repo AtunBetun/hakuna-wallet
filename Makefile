@@ -10,6 +10,10 @@ build:
 	@echo "Building..."
 	cd src && go build -o ../$(BINARY_NAME) cmd/batch/main.go
 
+test:
+	@echo "Testing"
+	cd src && go test ./...
+
 
 # Clean up built files
 clean:
