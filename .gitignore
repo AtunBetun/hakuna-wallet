@@ -7,7 +7,6 @@
 
 # Build output directories
 /bin/
-/pkg/
 
 # Test output directories
 /testdata/
@@ -33,3 +32,11 @@
 .env.*
 config.local.json
 out
+
+# Wallet tickets
+/tickets
+CertificateSigningRequest.certSigningRequest
+certs/
+
+**/.gocache/
+**/.gomodcache/

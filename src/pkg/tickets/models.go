@@ -1,6 +1,10 @@
 package tickets
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/atunbetun/hakuna-wallet/pkg"
+)
 
 // Full struct mapping the API response
 type TTResponse struct {
@@ -46,6 +50,20 @@ type TicketTailorConfig struct {
 	ApiKey  string
 	EventId string
 	BaseUrl string
+}
+
+func NewTicketTailorConfig(cfg pkg.Config) (TicketTailorConfig, error) {
+	ticketCfg := TicketTailorConfig{
+		ApiKey:  cfg.TicketTailorAPIKey,
+		EventId: cfg.TicketTailorEventId,
+		BaseUrl: cfg.TicketTailorBaseUrl,
+	}
+
+	if err := ticketCfg.Validate(); err != nil {
+		return TicketTailorConfig{}, fmt.Errorf("invalid ticket tailor config: %w", err)
+	}
+
+	return ticketCfg, nil
 }
 
 func (c *TicketTailorConfig) Validate() error {

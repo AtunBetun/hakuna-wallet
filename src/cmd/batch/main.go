@@ -23,14 +23,15 @@ func main() {
 	}
 
 	cfg := pkg.Config{}
-
 	if err := env.Parse(&cfg); err != nil {
 		logger.Logger.Fatal("Failed to parse env", zap.Any("err", err))
 	}
+
 	logger.Logger.Debug("configs parsed", zap.Any("cfg", cfg))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	batch.PurgeTickets(ctx, cfg)
+	// batch.PurgeTickets(ctx, cfg)
+	batch.GenerateTickets(ctx, cfg)
 	logger.Logger.Info("Success")
 
 }
