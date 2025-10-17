@@ -11,12 +11,18 @@ import (
 	"path"
 	"strings"
 
+	"github.com/atunbetun/hakuna-wallet/pkg/http_logs"
 	"github.com/atunbetun/hakuna-wallet/pkg/logger"
 	"go.uber.org/zap"
 )
 
-// TODO: need to paginate and fetch all
-func FetchIssuedTickets(ctx context.Context, config TicketTailorConfig) ([]TTIssuedTicket, error) {
+func FetchIssuedTickets(
+	ctx context.Context,
+	config TicketTailorConfig,
+	status string,
+	startingAfter string,
+
+) ([]TTIssuedTicket, error) {
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
@@ -26,7 +32,13 @@ func FetchIssuedTickets(ctx context.Context, config TicketTailorConfig) ([]TTIss
 		return nil, err
 	}
 	u.Path = path.Join(u.Path, "issued_tickets")
-	// u.RawQuery = url.Values{"event_id": {config.EventId}}.Encode()
+	q := url.Values{}
+	q.Set("event_id", config.EventId)
+	q.Set("status", status)
+	if startingAfter != "" {
+		q.Set("starting_after", startingAfter)
+	}
+	u.RawQuery = q.Encode()
 
 	logger.Logger.Debug("TT Url", zap.Any("url", u.String()))
 
@@ -34,7 +46,8 @@ func FetchIssuedTickets(ctx context.Context, config TicketTailorConfig) ([]TTIss
 	encodedApiKey := base64.StdEncoding.EncodeToString([]byte(config.ApiKey))
 	req.Header.Set("Authorization", "Basic "+encodedApiKey)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := http_logs.NewLoggingClient()
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +66,40 @@ func FetchIssuedTickets(ctx context.Context, config TicketTailorConfig) ([]TTIss
 	logger.Logger.Debug("TT Issued Tickets", zap.Any("data", ttResp.Data))
 
 	return ttResp.Data, nil
+}
+
+type TicketStatus string
+
+const (
+	Valid TicketStatus = "valid"
+)
+
+func FetchAllIssuedTickets(
+	ctx context.Context,
+	config TicketTailorConfig,
+	status TicketStatus,
+) (
+	[]TTIssuedTicket,
+	error,
+) {
+	var allTickets []TTIssuedTicket
+	var startingAfter string
+
+	for {
+		tickets, err := FetchIssuedTickets(ctx, config, string(status), startingAfter)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(tickets) == 0 {
+			break
+		}
+
+		allTickets = append(allTickets, tickets...)
+		startingAfter = tickets[len(tickets)-1].ID
+	}
+
+	return allTickets, nil
 }
 
 type CheckAction string
@@ -90,7 +137,8 @@ func CheckInTicket(ctx context.Context, config TicketTailorConfig, ticketId stri
 	req.Header.Set("Authorization", "Basic "+encodedApiKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := http.DefaultClient.Do(req)
+	client := http_logs.NewLoggingClient()
+	resp, err := client.Do(req)
 	if err != nil {
 		return CheckInResponse{}, err
 	}
@@ -98,13 +146,13 @@ func CheckInTicket(ctx context.Context, config TicketTailorConfig, ticketId stri
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return CheckInResponse{}, err
+		panic(err)
 	}
 
 	var chResponse CheckInResponse
 	err = json.Unmarshal(body, &chResponse)
 	if err != nil {
-		return CheckInResponse{}, err
+		panic(err)
 	}
 	logger.Logger.Debug(fmt.Sprintf("TT %s ticket", checkAction), zap.Any("ticketId", ticketId), zap.Any("action", checkAction))
 
