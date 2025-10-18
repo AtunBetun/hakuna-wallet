@@ -24,18 +24,18 @@ func TestGenerateWalletTickets(t *testing.T) {
 	}
 
 	cfg := pkg.Config{
-		TicketTailorAPIKey:       "test-api-key",
-		TicketTailorEventId:      "4242",
-		TicketTailorBaseUrl:      "https://example.invalid",
-		DatabaseURL:              "postgres://localhost:5432/hakuna?sslmode=disable",
-		AppleP12Path:             "testdata/certificates/hakuna-test.p12",
-		AppleP12Password:         "password",
-		AppleRootCertPath:        "testdata/certificates/apple-root.cer",
-		ApplePassTypeID:          "pass.com.hakuna.integration",
-		AppleTeamID:              "TEAMSAMPLE",
-		GoogleServiceAccountJSON: "{}",
-		GoogleIssuerEmail:        "issuer@hakuna.test",
-		TicketsDir:               t.TempDir(),
+		TicketTailorAPIKey:  "test-api-key",
+		TicketTailorEventId: "4242",
+		TicketTailorBaseUrl: "https://example.invalid",
+		// DatabaseURL:              "postgres://localhost:5432/hakuna?sslmode=disable",
+		AppleP12Path:      "testdata/certificates/hakuna-test.p12",
+		AppleP12Password:  "password",
+		AppleRootCertPath: "testdata/certificates/apple-root.cer",
+		ApplePassTypeID:   "pass.com.hakuna.integration",
+		AppleTeamID:       "TEAMSAMPLE",
+		// GoogleServiceAccountJSON: "{}",
+		// GoogleIssuerEmail:        "issuer@hakuna.test",
+		TicketsDir: t.TempDir(),
 	}
 
 	generator, err := batch.NewWalletTicketGenerator(cfg)
