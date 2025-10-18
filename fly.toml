@@ -6,14 +6,6 @@
 app = 'hakuna-wallet'
 primary_region = 'dfw'
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
-
 [env]
   APP_ENV = 'prod'
   TT_EVENT_ID = 'ev_6873576'
@@ -36,3 +28,6 @@ primary_region = 'dfw'
 [[files]]
   guest_path = '/tmp/certs/apple_root.cer'
   secret_name = 'APPLE_ROOT_CERT_BASE64'
+
+[processes]
+  batch = "/app/out"

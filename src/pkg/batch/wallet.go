@@ -11,7 +11,6 @@ import (
 	"github.com/atunbetun/hakuna-wallet/pkg/tickets"
 	"github.com/atunbetun/hakuna-wallet/pkg/wallet"
 	"github.com/atunbetun/hakuna-wallet/pkg/wallet/apple"
-	"github.com/atunbetun/hakuna-wallet/pkg/wallet/google"
 	"go.uber.org/zap"
 )
 
@@ -74,18 +73,18 @@ func NewWalletTicketGenerator(cfg pkg.Config) (*WalletTicketGenerator, error) {
 		return nil, err
 	}
 
-	googleGen, err := googleGenerator(cfg)
-	if err != nil {
-		return nil, err
-	}
+	// googleGen, err := googleGenerator(cfg)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return &WalletTicketGenerator{
-		ticketConfig:    ticketCfg,
-		TicketFetcher:   defaultIssuedTicketFetcher(), // TODO: remove this
-		AppleGenerator:  appleGen,
-		GoogleGenerator: googleGen,
-		ArtifactSink:    sink,
-		TicketStatus:    defaultTicketStatus,
+		ticketConfig:   ticketCfg,
+		TicketFetcher:  defaultIssuedTicketFetcher(), // TODO: remove this
+		AppleGenerator: appleGen,
+		// GoogleGenerator: googleGen,
+		ArtifactSink: sink,
+		TicketStatus: defaultTicketStatus,
 	}, nil
 }
 
@@ -218,25 +217,25 @@ func appleGenerator(cfg pkg.Config) (passGenerator, error) {
 	}, nil
 }
 
-func googleGenerator(cfg pkg.Config) (passGenerator, error) {
-	if cfg.GoogleIssuerEmail == "" {
-		return nil, fmt.Errorf("google issuer email is required")
-	}
-	if cfg.GoogleServiceAccountJSON == "" {
-		return nil, fmt.Errorf("google service account json is required")
-	}
-
-	generator := google.NewGenerator(google.Config{
-		IssuerEmail:        cfg.GoogleIssuerEmail,
-		ClassID:            "hakuna.wallet.ticket", // TODO: inject
-		BinRange:           "000000-999999",
-		ServiceAccountJSON: cfg.GoogleServiceAccountJSON,
-	})
-
-	return func(ctx context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
-		return generator.Generate(ctx, ticket)
-	}, nil
-}
+// func googleGenerator(cfg pkg.Config) (passGenerator, error) {
+// 	if cfg.GoogleIssuerEmail == "" {
+// 		return nil, fmt.Errorf("google issuer email is required")
+// 	}
+// 	if cfg.GoogleServiceAccountJSON == "" {
+// 		return nil, fmt.Errorf("google service account json is required")
+// 	}
+//
+// 	generator := google.NewGenerator(google.Config{
+// 		IssuerEmail:        cfg.GoogleIssuerEmail,
+// 		ClassID:            "hakuna.wallet.ticket", // TODO: inject
+// 		BinRange:           "000000-999999",
+// 		ServiceAccountJSON: cfg.GoogleServiceAccountJSON,
+// 	})
+//
+// 	return func(ctx context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
+// 		return generator.Generate(ctx, ticket)
+// 	}, nil
+// }
 
 func prepareArtifactSink(cfg pkg.Config) (artifactSink, error) {
 	return newFileSink(cfg.TicketsDir)
