@@ -16,6 +16,13 @@ primary_region = 'dfw'
 
 [env]
   APP_ENV = 'prod'
+  TT_EVENT_ID = 'ev_6873576'
+  TT_BASE_URL = 'https://api.tickettailor.com/v1'
+  DATABASE_URL= 'postgres://wallet:walletpass@db:5432/walletdb?sslmode=disable'
+  APPLE_ROOT_CERT_PATH = '/tmp/certs/apple_root.cer'
+  APPLE_P12_PATH = '/tmp/certs/signing.p12'
+  APPLE_PASS_TYPE_IDENTIFIER = 'pass.hakuna'
+  APPLE_TEAM_IDENTIFIER = 'T2L94M239S'
 
 [[vm]]
   memory = '1gb'
