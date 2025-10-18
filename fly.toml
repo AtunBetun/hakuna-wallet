@@ -18,3 +18,11 @@ primary_region = 'dfw'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+
+[[files]]
+  guest_path = '/tmp/certs/signing.p12'
+  secret_name = 'APPLE_P12_BASE64'
+
+[[files]]
+  guest_path = '/tmp/certs/apple_root.cer'
+  secret_name = 'APPLE_ROOT_CERT_BASE64'
