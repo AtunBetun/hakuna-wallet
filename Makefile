@@ -1,4 +1,6 @@
 BINARY_NAME=out
+IMAGE_NAME?=hakuna-wallet
+IMAGE_TAG?=latest
 
 # Run the binary
 run: build
@@ -20,4 +22,8 @@ clean:
 	@echo "Cleaning..."
 	rm -f $(BINARY_NAME)
 
-.PHONY: build run clean deps
+docker-build:
+	@echo "Building Docker image..."
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) . --progress plain
+
+.PHONY: build run clean deps docker-build

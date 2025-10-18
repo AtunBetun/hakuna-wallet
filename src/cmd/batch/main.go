@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/atunbetun/hakuna-wallet/pkg"
@@ -17,9 +18,10 @@ func main() {
 	defer logger.Logger.Sync()
 	logger.Logger.Info("Started")
 
-	err := godotenv.Load()
-	if err != nil {
-		logger.Logger.Fatal("Error loading .env file", zap.Any("err", err))
+	if shouldLoadDotenv() {
+		if err := godotenv.Load(); err != nil {
+			logger.Logger.Fatal("Error loading .env file", zap.Any("err", err))
+		}
 	}
 
 	cfg := pkg.Config{}
@@ -30,8 +32,16 @@ func main() {
 	logger.Logger.Debug("configs parsed", zap.Any("cfg", cfg))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	// batch.PurgeTickets(ctx, cfg)
 	batch.GenerateTickets(ctx, cfg)
 	logger.Logger.Info("Success")
 
+}
+
+func shouldLoadDotenv() bool {
+	env, found := os.LookupEnv("APP_ENV")
+	if found && env == "prod" {
+		logger.Logger.Info("Not loading .env")
+		return false
+	}
+	return true
 }
