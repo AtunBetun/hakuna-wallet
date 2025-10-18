@@ -19,6 +19,7 @@ func main() {
 	logger.Logger.Info("Started")
 
 	if shouldLoadDotenv() {
+		logger.Logger.Info("Loading .env")
 		if err := godotenv.Load(); err != nil {
 			panic(err)
 		}
