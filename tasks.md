@@ -16,3 +16,4 @@
 - [ ] Automate github deploy pipeline to Fly.io
 - [ ] Set up semantic versioning workflow for releases
 - [x] Gate Fly deploy workflow on successful CI run
+- [x] Materialize certificate secrets into runtime files at startup

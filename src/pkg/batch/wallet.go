@@ -208,7 +208,7 @@ func appleGenerator(cfg pkg.Config) (passGenerator, error) {
 		LogoText:                   "Hakuna Wallet",
 		SigningCertificatePath:     cfg.AppleP12Path,
 		SigningCertificatePassword: cfg.AppleP12Password,
-		AppleRootCertificatePath:   cfg.AppleRootCert,
+		AppleRootCertificatePath:   cfg.AppleRootCertPath,
 	}
 
 	creator := apple.NewApplePassCreator(appleConfig)

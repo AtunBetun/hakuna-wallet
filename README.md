@@ -87,9 +87,11 @@ cp .env.example .env    # create your own template if needed
 | `TT_EVENT_ID` | ✅ | Ticket Tailor event identifier used to scope issued tickets. |
 | `TT_BASE_URL` | ✅ | Base URL for the Ticket Tailor API (e.g. `https://api.tickettailor.com/v1`). |
 | `DATABASE_URL` | ✅ | Postgres connection string; used by future persistence layers and migrations. |
-| `APPLE_P12_PATH` | ✅ | Path to the Apple Wallet signing certificate (`.p12`). |
+| `APPLE_P12_PATH` | Conditional | Path to the Apple Wallet signing certificate (`.p12`). Provide either this or `APPLE_P12_BASE64`. |
 | `APPLE_P12_PASSWORD` | ✅ | Password for the certificate above. |
-| `APPLE_ROOT_CERT_PATH` | ✅ | Path to the Apple WWDR CA certificate (`.cer`). |
+| `APPLE_P12_BASE64` | Conditional | Base64-encoded Apple signing certificate. When set, the app writes the decoded file to `/tmp/certs/apple-signing.p12`. |
+| `APPLE_ROOT_CERT_PATH` | Conditional | Path to the Apple WWDR CA certificate (`.cer`). Provide either this or `APPLE_ROOT_CERT_BASE64`. |
+| `APPLE_ROOT_CERT_BASE64` | Conditional | Base64-encoded Apple root certificate. When set, the app writes the decoded file to `/tmp/certs/apple-root.cer`. |
 | `APPLE_PASS_TYPE_IDENTIFIER` | ✅ | Pass type identifier registered with Apple. |
 | `APPLE_TEAM_IDENTIFIER` | ✅ | Apple Developer team ID associated with the pass. |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | ✅ | Inline JSON for the Google Wallet service account credentials. |
@@ -99,7 +101,17 @@ cp .env.example .env    # create your own template if needed
 | `PORT` | optional | Reserved for API deployments (defaults to `8080`). |
 | `TICKETS_DIR` | optional | Output directory for generated artifacts (`tickets`). |
 
-> Keep certificate paths relative to the repository (for example `certs/cert.p12`) so the CLI can resolve them consistently across environments.
+> For local development, keep certificate paths relative to the repository (for example `certs/cert.p12`) so the CLI can resolve them consistently.
+
+When running on Fly.io (or any container runtime without direct filesystem provisioning), store the certificate contents as secrets:
+
+```bash
+fly secrets set \
+  APPLE_P12_BASE64="$(base64 < certs/cert.p12)" \
+  APPLE_ROOT_CERT_BASE64="$(base64 < certs/apple-root.cer)"
+```
+
+At startup the batch binary writes the decoded files to `/tmp/certs/` and updates `APPLE_P12_PATH`/`APPLE_ROOT_CERT_PATH` automatically.
 
 ## Local Development
 
@@ -151,4 +163,3 @@ The SQL migration under `src/pkg/db/migrations/001_init.sql` provisions a `ticke
 - Persist generated artifact metadata using the bundled Postgres schema.
 - Wire the `BATCH_CRON` configuration into a scheduler if you promote the CLI into a long-running service.
 - Extend `pkg/batch` to distribute or upload artifacts after creation (currently they remain on disk).
-

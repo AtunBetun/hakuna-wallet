@@ -10,11 +10,15 @@ type Config struct {
 	DatabaseURL string `env:"DATABASE_URL,required"`
 
 	// Apple Pass
-	AppleP12Path     string `env:"APPLE_P12_PATH,required"`
+	AppleP12Path     string `env:"APPLE_P12_PATH"`
 	AppleP12Password string `env:"APPLE_P12_PASSWORD,required"`
-	AppleRootCert    string `env:"APPLE_ROOT_CERT_PATH,required"`
-	ApplePassTypeID  string `env:"APPLE_PASS_TYPE_IDENTIFIER,required"`
-	AppleTeamID      string `env:"APPLE_TEAM_IDENTIFIER,required"`
+	AppleP12Base64   string `env:"APPLE_P12_BASE64"`
+
+	AppleRootCertPath string `env:"APPLE_ROOT_CERT_PATH"`
+	AppleRootBase64   string `env:"APPLE_ROOT_CERT_BASE64"`
+
+	ApplePassTypeID string `env:"APPLE_PASS_TYPE_IDENTIFIER,required"`
+	AppleTeamID     string `env:"APPLE_TEAM_IDENTIFIER,required"`
 
 	// Google Wallet
 	GoogleServiceAccountJSON string `env:"GOOGLE_SERVICE_ACCOUNT_JSON,required"`

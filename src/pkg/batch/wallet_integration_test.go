@@ -30,7 +30,7 @@ func TestGenerateWalletTickets(t *testing.T) {
 		DatabaseURL:              "postgres://localhost:5432/hakuna?sslmode=disable",
 		AppleP12Path:             "testdata/certificates/hakuna-test.p12",
 		AppleP12Password:         "password",
-		AppleRootCert:            "testdata/certificates/apple-root.cer",
+		AppleRootCertPath:        "testdata/certificates/apple-root.cer",
 		ApplePassTypeID:          "pass.com.hakuna.integration",
 		AppleTeamID:              "TEAMSAMPLE",
 		GoogleServiceAccountJSON: "{}",

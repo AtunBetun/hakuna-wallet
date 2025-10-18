@@ -20,19 +20,27 @@ func main() {
 
 	if shouldLoadDotenv() {
 		if err := godotenv.Load(); err != nil {
-			logger.Logger.Fatal("Error loading .env file", zap.Any("err", err))
+			panic(err)
 		}
 	}
 
 	cfg := pkg.Config{}
 	if err := env.Parse(&cfg); err != nil {
-		logger.Logger.Fatal("Failed to parse env", zap.Any("err", err))
+		panic(err)
+	}
+
+	cfg, err := pkg.InitializeCertificates(cfg)
+	if err != nil {
+		panic(err)
 	}
 
 	logger.Logger.Debug("configs parsed", zap.Any("cfg", cfg))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	batch.GenerateTickets(ctx, cfg)
+	err = batch.GenerateTickets(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
 	logger.Logger.Info("Success")
 
 }

@@ -36,16 +36,17 @@ func PurgeTickets(ctx context.Context, cfg pkg.Config) {
 
 }
 
-func GenerateTickets(ctx context.Context, cfg pkg.Config) {
+func GenerateTickets(ctx context.Context, cfg pkg.Config) error {
 	logger.Logger.Info("Generating Apple Wallet Tickets")
 	ticketGenerator, err := NewWalletTicketGenerator(cfg)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_, err = ticketGenerator.GenerateTickets(ctx)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	logger.Logger.Info("Finished Apple Wallet Tickets")
+	return nil
 
 }
