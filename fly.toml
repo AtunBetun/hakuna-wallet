@@ -15,6 +15,7 @@ primary_region = 'dfw'
   APPLE_P12_PATH = '/tmp/certs/signing.p12'
   APPLE_PASS_TYPE_IDENTIFIER = 'pass.hakuna'
   APPLE_TEAM_IDENTIFIER = 'T2L94M239S'
+  TICKETS_DIR = '/mnt/tickets_vol'
 
 [[vm]]
   memory = '1gb'
@@ -28,6 +29,10 @@ primary_region = 'dfw'
 [[files]]
   guest_path = '/tmp/certs/apple_root.cer'
   secret_name = 'APPLE_ROOT_CERT_BASE64'
+
+[[mounts]]
+  source = "tickets_vol"
+  destination = "/mnt/tickets_vol"
 
 [processes]
   batch = "/app/out"

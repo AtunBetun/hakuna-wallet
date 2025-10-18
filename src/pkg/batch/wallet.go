@@ -63,24 +63,19 @@ func NewWalletTicketGenerator(cfg pkg.Config) (*WalletTicketGenerator, error) {
 		return nil, err
 	}
 
-	sink, err := prepareArtifactSink(cfg)
+	sink, err := newFileSink(cfg.TicketsDir)
 	if err != nil {
 		return nil, err
 	}
 
-	appleGen, err := appleGenerator(cfg)
+	appleGen, err := newAppleGenerator(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	// googleGen, err := googleGenerator(cfg)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	return &WalletTicketGenerator{
 		ticketConfig:   ticketCfg,
-		TicketFetcher:  defaultIssuedTicketFetcher(), // TODO: remove this
+		TicketFetcher:  newTicketTailorTicketFetcher(), // TODO: remove this
 		AppleGenerator: appleGen,
 		// GoogleGenerator: googleGen,
 		ArtifactSink: sink,
@@ -135,14 +130,6 @@ func (g *WalletTicketGenerator) GenerateTickets(ctx context.Context) (Generation
 			}
 			created = append(created, info)
 		}
-
-		if g.GoogleGenerator != nil {
-			info, err := g.generateAndPersist(ctx, g.GoogleGenerator, tt, PlatformGoogle)
-			if err != nil {
-				return GenerationSummary{}, err
-			}
-			created = append(created, info)
-		}
 	}
 
 	return GenerationSummary{Artifacts: created}, nil
@@ -182,13 +169,13 @@ func (g *WalletTicketGenerator) generateAndPersist(
 }
 
 // TODO: remove this
-func defaultIssuedTicketFetcher() ticketFetcher {
+func newTicketTailorTicketFetcher() ticketFetcher {
 	return func(ctx context.Context, cfg tickets.TicketTailorConfig, status string) ([]tickets.TTIssuedTicket, error) {
 		return tickets.FetchAllIssuedTickets(ctx, cfg, tickets.Valid)
 	}
 }
 
-func appleGenerator(cfg pkg.Config) (passGenerator, error) {
+func newAppleGenerator(cfg pkg.Config) (passGenerator, error) {
 	if cfg.ApplePassTypeID == "" {
 		return nil, fmt.Errorf("apple pass type identifier is required")
 	}
@@ -236,10 +223,6 @@ func appleGenerator(cfg pkg.Config) (passGenerator, error) {
 // 		return generator.Generate(ctx, ticket)
 // 	}, nil
 // }
-
-func prepareArtifactSink(cfg pkg.Config) (artifactSink, error) {
-	return newFileSink(cfg.TicketsDir)
-}
 
 func newFileSink(root string) (artifactSink, error) {
 	if root == "" {

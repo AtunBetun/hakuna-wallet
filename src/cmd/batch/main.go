@@ -30,15 +30,10 @@ func main() {
 		panic(err)
 	}
 
-	cfg, err := pkg.InitializeCertificates(cfg)
-	if err != nil {
-		panic(err)
-	}
-
 	logger.Logger.Debug("configs parsed", zap.Any("cfg", cfg))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	err = batch.GenerateTickets(ctx, cfg)
+	err := batch.GenerateTickets(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}

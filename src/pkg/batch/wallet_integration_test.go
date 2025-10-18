@@ -27,15 +27,12 @@ func TestGenerateWalletTickets(t *testing.T) {
 		TicketTailorAPIKey:  "test-api-key",
 		TicketTailorEventId: "4242",
 		TicketTailorBaseUrl: "https://example.invalid",
-		// DatabaseURL:              "postgres://localhost:5432/hakuna?sslmode=disable",
-		AppleP12Path:      "testdata/certificates/hakuna-test.p12",
-		AppleP12Password:  "password",
-		AppleRootCertPath: "testdata/certificates/apple-root.cer",
-		ApplePassTypeID:   "pass.com.hakuna.integration",
-		AppleTeamID:       "TEAMSAMPLE",
-		// GoogleServiceAccountJSON: "{}",
-		// GoogleIssuerEmail:        "issuer@hakuna.test",
-		TicketsDir: t.TempDir(),
+		AppleP12Path:        "testdata/certificates/hakuna-test.p12",
+		AppleP12Password:    "password",
+		AppleRootCertPath:   "testdata/certificates/apple-root.cer",
+		ApplePassTypeID:     "pass.com.hakuna.integration",
+		AppleTeamID:         "TEAMSAMPLE",
+		TicketsDir:          t.TempDir(),
 	}
 
 	generator, err := batch.NewWalletTicketGenerator(cfg)
@@ -56,8 +53,7 @@ func TestGenerateWalletTickets(t *testing.T) {
 	}
 
 	expected := map[batch.Platform]map[string]string{
-		batch.PlatformApple:  {},
-		batch.PlatformGoogle: {},
+		batch.PlatformApple: {},
 	}
 
 	generator.AppleGenerator = func(_ context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
@@ -72,21 +68,8 @@ func TestGenerateWalletTickets(t *testing.T) {
 		}, nil
 	}
 
-	generator.GoogleGenerator = func(_ context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
-		payload := fmt.Sprintf("google:%s", ticket.ID)
-		fileName := fmt.Sprintf("%s-google.mock", ticket.ID)
-		expected[batch.PlatformGoogle][fileName] = payload
-		return wallet.Artifact{
-			Platform:    string(batch.PlatformGoogle),
-			FileName:    fileName,
-			ContentType: "application/json",
-			Data:        []byte(payload),
-		}, nil
-	}
-
 	saved := map[batch.Platform]map[string][]byte{
-		batch.PlatformApple:  {},
-		batch.PlatformGoogle: {},
+		batch.PlatformApple: {},
 	}
 
 	generator.ArtifactSink = func(_ context.Context, artifact wallet.Artifact) error {
