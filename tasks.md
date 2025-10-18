@@ -15,3 +15,4 @@
 - [ ] Prepare Fly.io configuration (Dockerfile, fly.toml, secrets)
 - [ ] Automate github deploy pipeline to Fly.io
 - [ ] Set up semantic versioning workflow for releases
+- [x] Gate Fly deploy workflow on successful CI run
