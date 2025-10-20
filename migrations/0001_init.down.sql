@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS ticket_passes;
+DROP TABLE IF EXISTS tickets;
