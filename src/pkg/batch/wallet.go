@@ -25,8 +25,7 @@ type artifactSink func(ctx context.Context, artifact wallet.Artifact) error
 type Platform string
 
 const (
-	PlatformApple  Platform = "apple"
-	PlatformGoogle Platform = "google"
+	PlatformApple Platform = "apple"
 )
 
 // TicketGenerator produces wallet artifacts from Ticket Tailor issued tickets.
@@ -48,12 +47,11 @@ type GeneratedArtifact struct {
 
 // WalletTicketGenerator orchestrates fetching tickets, generating wallet passes, and persisting artifacts.
 type WalletTicketGenerator struct {
-	ticketConfig    tickets.TicketTailorConfig
-	TicketFetcher   ticketFetcher
-	AppleGenerator  passGenerator
-	GoogleGenerator passGenerator
-	ArtifactSink    artifactSink
-	TicketStatus    string
+	ticketConfig   tickets.TicketTailorConfig
+	TicketFetcher  ticketFetcher
+	AppleGenerator passGenerator
+	ArtifactSink   artifactSink
+	TicketStatus   string
 }
 
 // NewWalletTicketGenerator wires default dependencies based on the provided configuration.
@@ -68,7 +66,7 @@ func NewWalletTicketGenerator(cfg pkg.Config) (*WalletTicketGenerator, error) {
 		return nil, err
 	}
 
-	appleGen, err := newAppleGenerator(cfg)
+	appleGen, err := newAppleGenerator(cfg, EmbeddedAppleGenerator)
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +75,8 @@ func NewWalletTicketGenerator(cfg pkg.Config) (*WalletTicketGenerator, error) {
 		ticketConfig:   ticketCfg,
 		TicketFetcher:  newTicketTailorTicketFetcher(), // TODO: remove this
 		AppleGenerator: appleGen,
-		// GoogleGenerator: googleGen,
-		ArtifactSink: sink,
-		TicketStatus: defaultTicketStatus,
+		ArtifactSink:   sink,
+		TicketStatus:   defaultTicketStatus,
 	}, nil
 }
 
@@ -175,15 +172,15 @@ func newTicketTailorTicketFetcher() ticketFetcher {
 	}
 }
 
-func newAppleGenerator(cfg pkg.Config) (passGenerator, error) {
+func getAppleConfig(cfg pkg.Config) (apple.AppleConfig, error) {
 	if cfg.ApplePassTypeID == "" {
-		return nil, fmt.Errorf("apple pass type identifier is required")
+		return apple.AppleConfig{}, fmt.Errorf("apple pass type identifier is required")
 	}
 	if cfg.AppleTeamID == "" {
-		return nil, fmt.Errorf("apple team identifier is required")
+		return apple.AppleConfig{}, fmt.Errorf("apple team identifier is required")
 	}
 	if cfg.AppleP12Path == "" {
-		return nil, fmt.Errorf("apple signing certificate path is required")
+		return apple.AppleConfig{}, fmt.Errorf("apple signing certificate path is required")
 	}
 
 	appleConfig := apple.AppleConfig{
@@ -196,33 +193,38 @@ func newAppleGenerator(cfg pkg.Config) (passGenerator, error) {
 		SigningCertificatePassword: cfg.AppleP12Password,
 		AppleRootCertificatePath:   cfg.AppleRootCertPath,
 	}
-
-	creator := apple.NewApplePassCreator(appleConfig)
-
-	return func(ctx context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
-		return creator.Create(ctx, ticket)
-	}, nil
+	return appleConfig, nil
 }
 
-// func googleGenerator(cfg pkg.Config) (passGenerator, error) {
-// 	if cfg.GoogleIssuerEmail == "" {
-// 		return nil, fmt.Errorf("google issuer email is required")
-// 	}
-// 	if cfg.GoogleServiceAccountJSON == "" {
-// 		return nil, fmt.Errorf("google service account json is required")
-// 	}
-//
-// 	generator := google.NewGenerator(google.Config{
-// 		IssuerEmail:        cfg.GoogleIssuerEmail,
-// 		ClassID:            "hakuna.wallet.ticket", // TODO: inject
-// 		BinRange:           "000000-999999",
-// 		ServiceAccountJSON: cfg.GoogleServiceAccountJSON,
-// 	})
-//
-// 	return func(ctx context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
-// 		return generator.Generate(ctx, ticket)
-// 	}, nil
-// }
+type AppleGeneratorType string
+
+const (
+	EmbeddedAppleGenerator AppleGeneratorType = "embedded"
+	DefaultAppleGenerator  AppleGeneratorType = "default"
+)
+
+func newAppleGenerator(cfg pkg.Config, genType AppleGeneratorType) (passGenerator, error) {
+	appleConfig, err := getAppleConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	switch genType {
+	case EmbeddedAppleGenerator:
+		return func(ctx context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
+			creator := apple.NewEmbeddedApplePassCreator(appleConfig)
+			return creator.Create(ctx, ticket)
+		}, nil
+	case DefaultAppleGenerator:
+		return func(ctx context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error) {
+			creator := apple.NewDefaultApplePassCreator(appleConfig)
+			return creator.Create(ctx, ticket)
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown apple generator type: %s", genType)
+	}
+
+}
 
 func newFileSink(root string) (artifactSink, error) {
 	if root == "" {

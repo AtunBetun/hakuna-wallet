@@ -18,7 +18,7 @@ func TestBuildSignedPass(t *testing.T) {
 		return &passkit.SigningInformation{}, nil
 	}
 
-	gen := NewApplePassCreator(
+	gen := NewDefaultApplePassCreator(
 		AppleConfig{
 			PassTypeIdentifier:         "pass.com.hakuna.integration",
 			TeamIdentifier:             "TEAMHAKUNA",

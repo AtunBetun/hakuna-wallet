@@ -33,8 +33,8 @@ type defaultApplePassCreator struct {
 	QRSize            int
 }
 
-// NewApplePassCreator returns a pass creator configured with the provided options.
-func NewApplePassCreator(cfg AppleConfig) *defaultApplePassCreator {
+// NewDefaultApplePassCreator returns a pass creator configured with the provided options.
+func NewDefaultApplePassCreator(cfg AppleConfig) *defaultApplePassCreator {
 	return &defaultApplePassCreator{
 		Config: cfg,
 	}
