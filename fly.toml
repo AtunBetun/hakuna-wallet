@@ -10,7 +10,6 @@ primary_region = 'dfw'
   APP_ENV = 'prod'
   TT_EVENT_ID = 'ev_6873576'
   TT_BASE_URL = 'https://api.tickettailor.com/v1'
-  DATABASE_URL= 'postgres://wallet:walletpass@db:5432/walletdb?sslmode=disable'
   APPLE_ROOT_CERT_PATH = '/tmp/certs/apple_root.cer'
   APPLE_P12_PATH = '/tmp/certs/signing.p12'
   APPLE_PASS_TYPE_IDENTIFIER = 'pass.hakuna'
@@ -30,9 +29,9 @@ primary_region = 'dfw'
   guest_path = '/tmp/certs/apple_root.cer'
   secret_name = 'APPLE_ROOT_CERT_BASE64'
 
-[[mounts]]
-  source = "tickets_vol"
-  destination = "/mnt/tickets_vol"
+# [[mounts]]
+#   source = "tickets_vol"
+#   destination = "/mnt/tickets_vol"
 
 [processes]
-  batch = "/app/out"
+  cron = "/usr/local/bin/supercronic /app/cron.d/wallet.cron"

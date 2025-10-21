@@ -11,17 +11,26 @@ COPY src/ .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /src/bin/out ./cmd/batch
 
-RUN mkdir -p /src/runtime/data /src/runtime/tickets
+FROM alpine:3.20
 
-FROM gcr.io/distroless/base-debian12:nonroot
+RUN apk add --no-cache curl ca-certificates tzdata
+
+
+# Latest releases available at https://github.com/aptible/supercronic/releases
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.38/supercronic-linux-amd64 \
+    SUPERCRONIC_SHA1SUM=bc072eba2ae083849d5f86c6bd1f345f6ed902d0 \
+    SUPERCRONIC=supercronic-linux-amd64
+
+RUN curl -fsSLO "$SUPERCRONIC_URL" \
+    && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
+    && chmod +x "$SUPERCRONIC" \
+    && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
+    && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+
 
 WORKDIR /app
 
 COPY --from=builder /src/bin/out /app/out
-COPY --from=builder --chown=nonroot:nonroot /src/runtime/data /app/data
-COPY --from=builder --chown=nonroot:nonroot /src/runtime/tickets /app/tickets
 
-ENV DATA_DIR=/app/data
-ENV TICKETS_DIR=/app/tickets
-
-ENTRYPOINT ["/app/out"]
+RUN mkdir -p /app/cron.d \
+    && printf '*/5 * * * * /app/out\n' > /app/cron.d/wallet.cron
