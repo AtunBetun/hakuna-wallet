@@ -1,0 +1,82 @@
+{
+  "semantics": {},
+  "passTypeIdentifier": "pass.astrumcomputing.group1",
+  "formatVersion": 1,
+  "serialNumber": "0DF022CE-80FA-4212-8CFA-D50E46F8A12D",
+  "description": "",
+  "organizationName": "Wallet Creator",
+  "teamIdentifier": "7V9FL952BB",
+  "sharingProhibited": false,
+  "userInfo": {},
+  "locations": [
+    {
+      "latitude": 19.4309037,
+      "longitude": -99.133595,
+      "relevantText": ""
+    }
+  ],
+  "foregroundColor": "rgb(0,0,0)",
+  "backgroundColor": "rgb(214,214,214)",
+  "labelColor": "rgb(0,0,0)",
+  "groupingIdentifier": "Group1",
+  "barcodes": [
+    {
+      "format": "PKBarcodeFormatQR",
+      "message": "LT7K6RS",
+      "messageEncoding": "ISO-8859-1",
+      "altText": "LT7K6RS"
+    }
+  ],
+  "boardingPass": {
+    "headerFields": [
+      {
+        "key": "headerField_1",
+        "label": "GATE",
+        "value": "Mexico City, Mexico"
+      }
+    ],
+    "primaryFields": [
+      {
+        "key": "boardingPassPrimaryFrom_1",
+        "label": "Hakuna",
+        "value": "HKN"
+      },
+      {
+        "key": "boardingPassPrimaryTo_1",
+        "label": "Mundo Mundo Entero",
+        "value": "CTEA"
+      }
+    ],
+    "secondaryFields": [
+      {
+        "key": "secondaryField_1",
+        "label": "PASSENGER",
+        "value": "ALBERTO"
+      },
+      {
+        "key": "secondaryField_2",
+        "label": "CABIN",
+        "value": "HKN"
+      }
+    ],
+    "auxiliaryFields": [
+      {
+        "key": "auxiliaryField_1",
+        "label": "FLIGHT",
+        "value": "AC 1234"
+      },
+      {
+        "key": "auxiliaryField_2",
+        "label": "DATE",
+        "value": "Marzo 3, 4, 5 2025"
+      },
+      {
+        "key": "auxiliaryField_3",
+        "label": "BOARDING",
+        "value": "10:15AM"
+      }
+    ],
+    "backFields": [],
+    "transitType": "PKTransitTypeAir"
+  }
+}

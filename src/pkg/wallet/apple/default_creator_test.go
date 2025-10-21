@@ -1,4 +1,4 @@
-package apple_test
+package apple
 
 import (
 	"context"
@@ -7,25 +7,7 @@ import (
 	"github.com/alvinbaena/passkit"
 	"github.com/atunbetun/hakuna-wallet/pkg/logger"
 	"github.com/atunbetun/hakuna-wallet/pkg/tickets"
-	"github.com/atunbetun/hakuna-wallet/pkg/wallet/apple"
 )
-
-type capturingSigner struct {
-	pass      *passkit.Pass
-	template  passkit.PassTemplate
-	signing   *passkit.SigningInformation
-	payload   []byte
-	callCount int
-}
-
-func (c *capturingSigner) CreateSignedAndZippedPassArchive(pass *passkit.Pass, template passkit.PassTemplate, info *passkit.SigningInformation) ([]byte, error) {
-	c.pass = pass
-	c.template = template
-	c.signing = info
-	c.callCount++
-	c.payload = []byte("signed-pass-" + pass.SerialNumber)
-	return c.payload, nil
-}
 
 func TestBuildSignedPass(t *testing.T) {
 	logger.Init()
@@ -36,8 +18,8 @@ func TestBuildSignedPass(t *testing.T) {
 		return &passkit.SigningInformation{}, nil
 	}
 
-	gen := apple.NewApplePassCreator(
-		apple.AppleConfig{
+	gen := NewApplePassCreator(
+		AppleConfig{
 			PassTypeIdentifier:         "pass.com.hakuna.integration",
 			TeamIdentifier:             "TEAMHAKUNA",
 			OrganizationName:           "Hakuna Wallet",

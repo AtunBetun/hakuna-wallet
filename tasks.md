@@ -14,8 +14,14 @@
 - [x] Write repository tests using testcontainers-backed Postgres database
 
 ## Ticket assets
-- [ ] Integrate the designer-provided ticket template into the generator
+- [x] Integrate the designer-provided ticket template into the generator
 https://developer.apple.com/wallet/add-to-apple-wallet-guidelines/?utm_source=chatgpt.com
+
+## Current embedded Apple pass plan
+- [x] Review existing Apple wallet creator and ticket struct for required fields
+- [x] Embed designer pass bundle within the codebase
+- [x] Implement new Apple creator that reuses embedded assets and swaps QR/name
+- [x] Format code and run `go test ./...`
 
 ## Email delivery
 - [ ] Build email workflow to send the generated ticket
