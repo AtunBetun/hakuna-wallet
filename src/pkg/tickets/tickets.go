@@ -16,13 +16,30 @@ import (
 	"go.uber.org/zap"
 )
 
+// TODO: this doesn't enforce compile time checks for values, which is sad
+
+type TicketStatus string
+
+const (
+	Valid TicketStatus = "valid"
+)
+
+type CheckAction string
+
+const (
+	CheckIn  CheckAction = "checkIn"
+	CheckOut CheckAction = "checkOut"
+)
+
 func FetchIssuedTickets(
 	ctx context.Context,
 	config TicketTailorConfig,
-	status string,
+	status TicketStatus,
 	startingAfter string,
-
-) ([]TTIssuedTicket, error) {
+) (
+	[]TTIssuedTicket,
+	error,
+) {
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
@@ -34,7 +51,7 @@ func FetchIssuedTickets(
 	u.Path = path.Join(u.Path, "issued_tickets")
 	q := url.Values{}
 	q.Set("event_id", config.EventId)
-	q.Set("status", status)
+	q.Set("status", string(status))
 	if startingAfter != "" {
 		q.Set("starting_after", startingAfter)
 	}
@@ -46,6 +63,7 @@ func FetchIssuedTickets(
 	encodedApiKey := base64.StdEncoding.EncodeToString([]byte(config.ApiKey))
 	req.Header.Set("Authorization", "Basic "+encodedApiKey)
 
+	// TODO: this should probably be injected
 	client := http_logs.NewLoggingClient()
 	resp, err := client.Do(req)
 	if err != nil {
@@ -68,12 +86,6 @@ func FetchIssuedTickets(
 	return ttResp.Data, nil
 }
 
-type TicketStatus string
-
-const (
-	Valid TicketStatus = "valid"
-)
-
 func FetchAllIssuedTickets(
 	ctx context.Context,
 	config TicketTailorConfig,
@@ -86,7 +98,7 @@ func FetchAllIssuedTickets(
 	var startingAfter string
 
 	for {
-		tickets, err := FetchIssuedTickets(ctx, config, string(status), startingAfter)
+		tickets, err := FetchIssuedTickets(ctx, config, status, startingAfter)
 		if err != nil {
 			return nil, err
 		}
@@ -102,14 +114,15 @@ func FetchAllIssuedTickets(
 	return allTickets, nil
 }
 
-type CheckAction string
-
-const (
-	CheckIn  CheckAction = "checkIn"
-	CheckOut CheckAction = "checkOut"
-)
-
-func CheckInTicket(ctx context.Context, config TicketTailorConfig, ticketId string, checkAction CheckAction) (CheckInResponse, error) {
+func CheckInTicket(
+	ctx context.Context,
+	config TicketTailorConfig,
+	ticketId string,
+	checkAction CheckAction,
+) (
+	CheckInResponse,
+	error,
+) {
 	if err := config.Validate(); err != nil {
 		return CheckInResponse{}, err
 	}
@@ -137,6 +150,7 @@ func CheckInTicket(ctx context.Context, config TicketTailorConfig, ticketId stri
 	req.Header.Set("Authorization", "Basic "+encodedApiKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+	// TODO: this should probably be injected
 	client := http_logs.NewLoggingClient()
 	resp, err := client.Do(req)
 	if err != nil {

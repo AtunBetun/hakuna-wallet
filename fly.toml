@@ -29,9 +29,9 @@ primary_region = 'dfw'
   guest_path = '/tmp/certs/apple_root.cer'
   secret_name = 'APPLE_ROOT_CERT_BASE64'
 
-# [[mounts]]
-#   source = "tickets_vol"
-#   destination = "/mnt/tickets_vol"
+[mounts]
+  source = "tickets_vol"
+  destination = "/mnt/tickets_vol"
 
 [processes]
   cron = "/usr/local/bin/supercronic /app/cron.d/wallet.cron"

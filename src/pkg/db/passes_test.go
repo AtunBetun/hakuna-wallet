@@ -14,17 +14,17 @@ func TestPassRepositories(t *testing.T) {
 	conn := setupTestDatabase(t, ctx)
 
 	producedAt := time.Date(2025, 10, 20, 12, 0, 0, 0, time.UTC)
-	err := MarkPassProduced(ctx, conn, "apple_wallet", "tt_ticket_1", "buyer@example.com", producedAt)
+	err := SetPassProduced(ctx, conn, "apple_wallet", "tt_ticket_1", "buyer@example.com", producedAt)
 	require.NoError(t, err)
 
-	err = MarkPassProduced(ctx, conn, "apple_wallet", "tt_ticket_2", "carol@example.com", producedAt)
+	err = SetPassProduced(ctx, conn, "apple_wallet", "tt_ticket_2", "carol@example.com", producedAt)
 	require.NoError(t, err)
 	err = mutatePass(ctx, conn, "tt_ticket_2", "apple_wallet", func(pass *TicketPass) {
 		pass.Status = string(Sent)
 	})
 	require.NoError(t, err)
 
-	err = MarkPassProduced(ctx, conn, "apple_wallet", "tt_ticket_3", "pending@example.com", producedAt)
+	err = SetPassProduced(ctx, conn, "apple_wallet", "tt_ticket_3", "pending@example.com", producedAt)
 	require.NoError(t, err)
 	err = mutatePass(ctx, conn, "tt_ticket_3", "apple_wallet", func(pass *TicketPass) {
 		pass.Status = string(Pending)
@@ -32,10 +32,10 @@ func TestPassRepositories(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = MarkPassProduced(ctx, conn, "google_wallet", "tt_ticket_1", "buyer@example.com", producedAt)
+	err = SetPassProduced(ctx, conn, "google_wallet", "tt_ticket_1", "buyer@example.com", producedAt)
 	require.NoError(t, err)
 
-	records, err := ListProducedPasses(ctx, conn, "apple_wallet")
+	records, err := GetProducedPasses(ctx, conn, "apple_wallet")
 	require.NoError(t, err)
 
 	require.Len(t, records, 2)
@@ -55,7 +55,7 @@ func TestPassRepositories(t *testing.T) {
 	_, exists := records["tt_ticket_3"]
 	require.False(t, exists, "pending pass should not appear")
 
-	googleRecords, err := ListProducedPasses(ctx, conn, "google_wallet")
+	googleRecords, err := GetProducedPasses(ctx, conn, "google_wallet")
 	require.NoError(t, err)
 	require.Len(t, googleRecords, 1)
 	googleRecord, ok := googleRecords["tt_ticket_1"]

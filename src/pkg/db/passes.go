@@ -22,8 +22,8 @@ const (
 type PassChannel string
 
 const (
-	AppleWallet  PassChannel = "apple_wallet"
-	GoogleWallet PassChannel = "google_wallet"
+	AppleWalletChannel  PassChannel = "apple_wallet"
+	GoogleWalletChannel PassChannel = "google_wallet"
 )
 
 // PassRecord captures the persisted state of a wallet pass for a given ticket.
@@ -36,8 +36,8 @@ type PassRecord struct {
 	ErrorMessage   *string
 }
 
-// ListProducedPasses returns a map keyed by Ticket Tailor ID for passes that have been produced (or beyond) for a channel.
-func ListProducedPasses(
+// GetProducedPasses returns a map keyed by Ticket Tailor ID for passes that have been produced (or beyond) for a channel.
+func GetProducedPasses(
 	ctx context.Context,
 	conn *gorm.DB,
 	channel PassChannel,
@@ -86,11 +86,11 @@ func ListProducedPasses(
 	return records, nil
 }
 
-// MarkPassProduced upserts the ticket and marks the channel-specific pass as produced.
-func MarkPassProduced(
+// SetPassProduced upserts the ticket and marks the channel-specific pass as produced.
+func SetPassProduced(
 	ctx context.Context,
 	conn *gorm.DB,
-	channel string,
+	channel PassChannel,
 	ticketTailorID string,
 	email string,
 	producedAt time.Time,
@@ -143,7 +143,7 @@ func MarkPassProduced(
 		case errors.Is(err, gorm.ErrRecordNotFound):
 			pass = TicketPass{
 				TicketID:     ticket.ID,
-				Channel:      channel,
+				Channel:      string(channel),
 				Status:       string(Produced),
 				ProducedAt:   &producedAt,
 				ErrorMessage: nil,

@@ -3,34 +3,118 @@ package db
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/atunbetun/hakuna-wallet/pkg"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormLog "gorm.io/gorm/logger"
 )
 
-// Config represents the minimal settings required to open a database connection.
-type Config struct {
-	DSN                  string
-	MaxOpenConns         int
-	MaxIdleConns         int
-	ConnMaxLifetime      time.Duration
-	ConnMaxIdleTime      time.Duration
-	LogLevel             string
+type DatabaseConfig struct {
+	DSN                  string           `validate:"required"`
+	MaxOpenConns         int              `validate:"required"`
+	MaxIdleConns         int              `validate:"required"`
+	ConnMaxLifetime      time.Duration    `validate:"required"`
+	ConnMaxIdleTime      time.Duration    `validate:"required"`
+	LogLevel             gormLog.LogLevel `validate:"required"`
 	PreferSimpleProtocol bool
+	Host                 string `validate:"required"`
+	Port                 string `validate:"required"`
+	SSLMode              string `validate:"required"`
 }
 
+func FromAppConfig(cfg pkg.AppConfig) (DatabaseConfig, error) {
+	maxOpen := cfg.DatabaseMaxOpenConns
+	if maxOpen <= 0 {
+		maxOpen = 10
+	}
+	maxIdle := cfg.DatabaseMaxIdleConns
+	if maxIdle < 0 {
+		maxIdle = 0
+	}
+	if maxIdle > maxOpen {
+		maxIdle = maxOpen
+	}
+
+	logLevel := parseLogLevel(cfg.DatabaseLogLevel)
+
+	parsed, err := url.Parse(cfg.DatabaseURL)
+	if err != nil {
+		return DatabaseConfig{}, fmt.Errorf("invalid DATABASE_URL: %w", err)
+	}
+
+	scheme := strings.ToLower(parsed.Scheme)
+	if scheme != "postgres" && scheme != "postgresql" {
+		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL must use postgres scheme, got %q", parsed.Scheme)
+	}
+
+	query := parsed.Query()
+	sslmode := query.Get("sslmode")
+	if sslmode == "" {
+		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL must include sslmode param (set to require for Neon)")
+	}
+	if strings.EqualFold(sslmode, "disable") {
+		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL sslmode=disable is not supported for Neon")
+	}
+
+	host := parsed.Hostname()
+	if host == "" {
+		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL must include host")
+	}
+
+	port := parsed.Port()
+	if port == "" {
+		port = "5432"
+	}
+	if _, err := strconv.Atoi(port); err != nil {
+		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL must include valid port, got %q", port)
+	}
+
+	fmt.Println("HERE")
+
+	database := DatabaseConfig{
+		DSN:                  cfg.DatabaseURL,
+		MaxOpenConns:         maxOpen,
+		MaxIdleConns:         maxIdle,
+		ConnMaxLifetime:      cfg.DatabaseConnMaxLifetime,
+		ConnMaxIdleTime:      cfg.DatabaseConnMaxIdleTime,
+		LogLevel:             logLevel,
+		PreferSimpleProtocol: cfg.DatabasePreferSimpleProtocol,
+		Host:                 host,
+		Port:                 port,
+		SSLMode:              sslmode,
+	}
+	fmt.Println("THERE")
+	fmt.Printf("%+v", database)
+
+	err = validate.Struct(database)
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+	fmt.Println("AFTER")
+
+	return database, nil
+
+}
+
+// Database exposes validated database settings. Call Validate() first.
+
+var validate = validator.New(validator.WithRequiredStructEnabled())
+
 // Open establishes a gorm.DB connection using the provided settings.
-func Open(ctx context.Context, cfg Config) (*gorm.DB, error) {
+func Open(ctx context.Context, cfg DatabaseConfig) (*gorm.DB, error) {
 	if cfg.DSN == "" {
 		return nil, fmt.Errorf("database DSN is required")
 	}
 
 	gormCfg := &gorm.Config{
 		DisableAutomaticPing: true,
-		Logger:               logger.Default.LogMode(parseLogLevel(cfg.LogLevel)),
+		Logger:               gormLog.Default.LogMode(cfg.LogLevel),
 	}
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
@@ -78,29 +162,15 @@ func Close(db *gorm.DB) error {
 	return sqlDB.Close()
 }
 
-func parseLogLevel(level string) logger.LogLevel {
+func parseLogLevel(level string) gormLog.LogLevel {
 	switch level {
 	case "silent":
-		return logger.Silent
+		return gormLog.Silent
 	case "error":
-		return logger.Error
+		return gormLog.Error
 	case "info":
-		return logger.Info
+		return gormLog.Info
 	default:
-		return logger.Warn
-	}
-}
-
-// FromAppConfig converts the application config into a database config.
-func FromAppConfig(cfg pkg.Config) Config {
-	dbCfg := cfg.Database()
-	return Config{
-		DSN:                  dbCfg.DSN,
-		MaxOpenConns:         dbCfg.MaxOpenConns,
-		MaxIdleConns:         dbCfg.MaxIdleConns,
-		ConnMaxLifetime:      dbCfg.ConnMaxLifetime,
-		ConnMaxIdleTime:      dbCfg.ConnMaxIdleTime,
-		LogLevel:             dbCfg.LogLevel,
-		PreferSimpleProtocol: dbCfg.PreferSimpleProtocol,
+		return gormLog.Warn
 	}
 }

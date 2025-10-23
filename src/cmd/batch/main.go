@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
 
 	"github.com/atunbetun/hakuna-wallet/pkg"
 	"github.com/atunbetun/hakuna-wallet/pkg/batch"
-	"github.com/atunbetun/hakuna-wallet/pkg/db"
 	"github.com/atunbetun/hakuna-wallet/pkg/logger"
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
@@ -27,13 +25,8 @@ func main() {
 		}
 	}
 
-	cfg := pkg.Config{}
+	cfg := pkg.AppConfig{}
 	if err := env.Parse(&cfg); err != nil {
-		panic(err)
-	}
-
-	// TODO; this has mutation, could be better
-	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}
 
@@ -41,18 +34,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	databaseCfg := db.FromAppConfig(cfg)
-	conn, err := db.Open(ctx, databaseCfg)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if err := db.Close(conn); err != nil {
-			panic(fmt.Sprintf("closing database connection: %s", err))
-		}
-	}()
-
-	err = batch.GenerateTickets(ctx, cfg)
+	err := batch.GenerateTickets(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}

@@ -52,7 +52,7 @@ type TicketTailorConfig struct {
 	BaseUrl string
 }
 
-func NewTicketTailorConfig(cfg pkg.Config) (TicketTailorConfig, error) {
+func NewTicketTailorConfig(cfg pkg.AppConfig) (TicketTailorConfig, error) {
 	ticketCfg := TicketTailorConfig{
 		ApiKey:  cfg.TicketTailorAPIKey,
 		EventId: cfg.TicketTailorEventId,

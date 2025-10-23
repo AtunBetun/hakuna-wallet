@@ -11,6 +11,7 @@
   - `MarkPassProduced(ctx context.Context, db *gorm.DB, channel string, ticketID string, email string, producedAt time.Time) error`
 - [ ] Update batch pipeline to: fetch Ticket Tailor tickets, diff against repository data per channel (Apple, Google), produce passes, persist channel-specific metadata, and wrap DB writes in transactions
 - [ ] Write diffing logic unit tests for batch pipeline
+- [x] Add wallet syncer integration tests for fresh and existing tickets using testcontainers + HTTP proxy
 - [x] Write repository tests using testcontainers-backed Postgres database
 
 ## Ticket assets
@@ -36,3 +37,23 @@ https://developer.apple.com/wallet/add-to-apple-wallet-guidelines/?utm_source=ch
 
 ## Volume
 - [ ] Figure out volume replication or go to s3
+- [ ] Add better naming for how the tickets get saved
+
+## Code TODO Backlog
+- [ ] Refactor `pkg.Config.Validate` to eliminate mutation of receiver state (src/pkg/config.go:46)
+- [ ] Enforce compile-time validation for ticket status values (src/pkg/tickets/tickets.go:19)
+- [ ] Inject the HTTP client dependency in `FetchIssuedTickets` instead of constructing it inline (src/pkg/tickets/tickets.go:66)
+- [ ] Inject the HTTP client dependency in `CheckInTicket` instead of constructing it inline (src/pkg/tickets/tickets.go:153)
+- [ ] Remove the mutation warning when updating the embedded pass barcode assignment (src/pkg/wallet/apple/embedded_creator.go:119)
+- [ ] Remove the mutation warning when applying the embedded pass ticket holder name (src/pkg/wallet/apple/embedded_creator.go:124)
+- [ ] Refactor `updatePassBarcode` to avoid mutating the pass structure in place (src/pkg/wallet/apple/embedded_creator.go:188)
+- [ ] Refactor `applyTicketHolderName` to avoid mutating pass fields in place (src/pkg/wallet/apple/embedded_creator.go:207)
+- [ ] Refactor `updateFieldValue` to avoid mutating the provided fields slice (src/pkg/wallet/apple/embedded_creator.go:276)
+- [ ] Remove mutation from batch entrypoint config validation flow (src/cmd/batch/main.go:35)
+- [ ] Verify the `defaultTicketStatus` constant provides value or remove it (src/pkg/batch/wallet.go:26)
+- [ ] Restore validator usage without stack overflow in batch wallet syncer (src/pkg/batch/wallet.go:59)
+- [ ] Replace the inline `newTicketTailorTicketFetcher` wiring with injected dependency (src/pkg/batch/wallet.go:88)
+- [ ] Rework the batch validator initialization to avoid the TODO (src/pkg/batch/wallet.go:94)
+- [ ] Mark produced passes based on generated artifacts rather than source tickets (src/pkg/batch/wallet.go:140)
+- [ ] Remove the legacy `newTicketTailorTicketFetcher` helper (src/pkg/batch/wallet.go:231)
+- [ ] Improve the global validator initialization in the default Apple pass creator (src/pkg/wallet/apple/default_creator.go:49)

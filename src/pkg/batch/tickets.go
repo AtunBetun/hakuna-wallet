@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/atunbetun/hakuna-wallet/pkg"
+	"github.com/atunbetun/hakuna-wallet/pkg/db"
 	"github.com/atunbetun/hakuna-wallet/pkg/logger"
 	"github.com/atunbetun/hakuna-wallet/pkg/tickets"
 	"go.uber.org/zap"
 )
 
-func PurgeTickets(ctx context.Context, cfg pkg.Config) {
-
+func PurgeTickets(ctx context.Context, cfg pkg.AppConfig) {
 	ticketTailorConfig, err := tickets.NewTicketTailorConfig(cfg)
 	if err != nil {
 		panic(err)
@@ -21,7 +21,7 @@ func PurgeTickets(ctx context.Context, cfg pkg.Config) {
 		panic(err)
 	}
 
-	tick, err := tickets.FetchAllIssuedTickets(ctx, ticketTailorConfig, "issued")
+	tick, err := tickets.FetchAllIssuedTickets(ctx, ticketTailorConfig, "")
 	if err != nil {
 		panic(err)
 	}
@@ -33,20 +33,33 @@ func PurgeTickets(ctx context.Context, cfg pkg.Config) {
 		logger.Logger.Debug(fmt.Sprintf("%s ticket, loop: %d", check, i), zap.Any("ticketId", v.ID))
 		tickets.CheckInTicket(ctx, ticketTailorConfig, v.ID, check)
 	}
-
 }
 
-func GenerateTickets(ctx context.Context, cfg pkg.Config) error {
-	logger.Logger.Info("Generating Apple Wallet Tickets")
-	ticketGenerator, err := NewWalletTicketGenerator(cfg)
+func GenerateTickets(ctx context.Context, cfg pkg.AppConfig) error {
+	databaseCfg, err := db.FromAppConfig(cfg)
 	if err != nil {
 		return err
 	}
-	_, err = ticketGenerator.GenerateTickets(ctx)
+
+	conn, err := db.Open(ctx, databaseCfg)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := db.Close(conn); err != nil {
+			panic(err)
+		}
+	}()
+
+	ticketGenerator, err := NewWalletTicketSyncer(ctx, cfg, conn)
+	if err != nil {
+		return err
+	}
+	logger.Logger.Info("Syncing tickets")
+	_, err = ticketGenerator.SyncTickets(ctx)
 	if err != nil {
 		return err
 	}
 	logger.Logger.Info("Finished Apple Wallet Tickets")
 	return nil
-
 }

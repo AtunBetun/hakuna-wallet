@@ -19,6 +19,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func startTestPostgres(t *testing.T, ctx context.Context) (string, func()) {
@@ -54,13 +55,13 @@ func setupTestDatabase(t *testing.T, ctx context.Context) *gorm.DB {
 	connStr, cleanup := startTestPostgres(t, ctx)
 	t.Cleanup(cleanup)
 
-	cfg := Config{
+	cfg := DatabaseConfig{
 		DSN:             connStr,
 		MaxOpenConns:    5,
 		MaxIdleConns:    5,
 		ConnMaxLifetime: 30 * time.Minute,
 		ConnMaxIdleTime: 15 * time.Minute,
-		LogLevel:        "warn",
+		LogLevel:        logger.Warn,
 	}
 
 	conn, err := Open(ctx, cfg)

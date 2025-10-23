@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm/logger"
 )
 
 func TestOpenAgainstMigratedDatabase(t *testing.T) {
@@ -17,28 +18,28 @@ func TestOpenAgainstMigratedDatabase(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		cfg  Config
+		cfg  DatabaseConfig
 	}{
 		{
 			name: "default",
-			cfg: Config{
+			cfg: DatabaseConfig{
 				DSN:             connStr,
 				MaxOpenConns:    5,
 				MaxIdleConns:    2,
 				ConnMaxLifetime: 30 * time.Minute,
 				ConnMaxIdleTime: 10 * time.Minute,
-				LogLevel:        "warn",
+				LogLevel:        logger.Warn,
 			},
 		},
 		{
 			name: "prefer simple protocol",
-			cfg: Config{
+			cfg: DatabaseConfig{
 				DSN:                  connStr,
 				MaxOpenConns:         3,
 				MaxIdleConns:         3,
 				ConnMaxLifetime:      time.Minute,
 				ConnMaxIdleTime:      30 * time.Second,
-				LogLevel:             "info",
+				LogLevel:             logger.Info,
 				PreferSimpleProtocol: true,
 			},
 		},
@@ -61,7 +62,7 @@ func TestOpenAgainstMigratedDatabase(t *testing.T) {
 }
 
 func TestOpenRequiresDSN(t *testing.T) {
-	_, err := Open(context.Background(), Config{})
+	_, err := Open(context.Background(), DatabaseConfig{})
 	require.Error(t, err)
 }
 
