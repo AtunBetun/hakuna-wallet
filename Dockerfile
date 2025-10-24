@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY src/ .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /src/bin/out ./cmd/batch
+RUN CGO_ENABLED=0 GOOS=linux go build -o /src/bin/out ./cmd/ticket_generator
 
 FROM alpine:3.20
 

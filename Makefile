@@ -13,7 +13,7 @@ run: build
 # Build the Go project
 build:
 	@echo "Building..."
-	cd src && go build -o ../$(BINARY_NAME) cmd/batch/main.go
+	cd src && go build -o ../$(BINARY_NAME) cmd/ticket_generator/main.go
 
 test:
 	@echo "Testing"
