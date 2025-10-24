@@ -22,10 +22,9 @@ func (m *mockDialer) DialAndSend(msgs ...*gomail.Message) error {
 
 func TestSendAppleWalletEmailBuildsMessage(t *testing.T) {
 	const (
-		from          = "from@example.com"
-		to            = "to@example.com"
-		subject       = "Your Ticket"
-		hostedPassURL = "https://cdn.example.com/ticket.pkpass"
+		from    = "from@example.com"
+		to      = "to@example.com"
+		subject = "Your Ticket"
 	)
 
 	tmpDir := t.TempDir()
@@ -36,7 +35,7 @@ func TestSendAppleWalletEmailBuildsMessage(t *testing.T) {
 
 	mock := &mockDialer{}
 
-	if err := SendAppleWalletEmail(from, to, subject, mock, pkpassPath, hostedPassURL); err != nil {
+	if err := SendAppleWalletEmail(from, to, subject, mock, pkpassPath); err != nil {
 		t.Fatalf("SendAppleWalletEmail returned error: %v", err)
 	}
 
@@ -65,9 +64,6 @@ func TestSendAppleWalletEmailBuildsMessage(t *testing.T) {
 
 	expectedSnippets := []string{
 		"Content-Type: text/html",
-		hostedPassURL,
-		"Add to Apple Wallet",
-		"Content-Type: text/plain",
 		"Content-Type: application/vnd.apple.pkpass",
 		`Content-Disposition: attachment; filename="ticket.pkpass"`,
 	}
@@ -94,7 +90,7 @@ func TestSendAppleWalletEmailPropagatesDialerError(t *testing.T) {
 		t.Fatalf("write pkpass: %v", err)
 	}
 
-	err := SendAppleWalletEmail("from@example.com", "to@example.com", "subject", failingDialer{err: errors.New(wantErr)}, pkpassPath, "https://example.com")
+	err := SendAppleWalletEmail("from@example.com", "to@example.com", "subject", failingDialer{err: errors.New(wantErr)}, pkpassPath)
 	if err == nil || !strings.Contains(err.Error(), wantErr) {
 		t.Fatalf("expected error containing %q, got %v", wantErr, err)
 	}

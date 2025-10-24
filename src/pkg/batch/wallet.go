@@ -135,7 +135,7 @@ func (g *WalletTicketSyncer) SyncTickets(ctx context.Context) (GenerationSummary
 		return GenerationSummary{}, fmt.Errorf("generating tickets: %w", err)
 	}
 
-	dialer := mailer.NewGoMailDialer(
+	dialer := mailer.NewAppleMailDialer(
 		"smtp.mail.me.com",
 		587,
 		"adesaintmalo@icloud.com",
