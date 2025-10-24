@@ -53,23 +53,24 @@ func newFileSink(root string) (artifactSink, error) {
 		return nil, fmt.Errorf("creating tickets dir: %w", err)
 	}
 
-	return func(ctx context.Context, artifact wallet.Artifact) error {
+	// returns file path and error
+	return func(ctx context.Context, artifact wallet.Artifact) (string, error) {
 		if artifact.FileName == "" {
-			return fmt.Errorf("artifact filename is required")
+			return "", fmt.Errorf("artifact filename is required")
 		}
 
 		if ctx.Err() != nil {
-			return ctx.Err()
+			return "", ctx.Err()
 		}
 
 		dir := filepath.Join(root, artifact.Platform)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("creating platform directory: %w", err)
+			return "", fmt.Errorf("creating platform directory: %w", err)
 		}
 
 		fullPath := filepath.Join(dir, artifact.FileName)
 		if err := os.WriteFile(fullPath, artifact.Data, 0o600); err != nil {
-			return fmt.Errorf("writing artifact to %s: %w", fullPath, err)
+			return "", fmt.Errorf("writing artifact to %s: %w", fullPath, err)
 		}
 		logger.Logger.Debug(
 			"Wrote wallet artifact to disk",
@@ -77,7 +78,7 @@ func newFileSink(root string) (artifactSink, error) {
 			zap.String("file_name", artifact.FileName),
 			zap.String("path", fullPath),
 		)
-		return nil
+		return fullPath, nil
 	}, nil
 }
 

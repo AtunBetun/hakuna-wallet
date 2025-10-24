@@ -8,9 +8,9 @@ import (
 	"github.com/atunbetun/hakuna-wallet/pkg"
 	"github.com/atunbetun/hakuna-wallet/pkg/db"
 	"github.com/atunbetun/hakuna-wallet/pkg/logger"
+	"github.com/atunbetun/hakuna-wallet/pkg/mailer"
 	"github.com/atunbetun/hakuna-wallet/pkg/tickets"
 	"github.com/atunbetun/hakuna-wallet/pkg/wallet"
-	// "github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -19,7 +19,8 @@ type ticketFetcher func(ctx context.Context, cfg tickets.TicketTailorConfig) ([]
 
 type passGenerator func(ctx context.Context, ticket tickets.TTIssuedTicket) (wallet.Artifact, error)
 
-type artifactSink func(ctx context.Context, artifact wallet.Artifact) error
+// returns file path and error
+type artifactSink func(ctx context.Context, artifact wallet.Artifact) (string, error)
 
 type Platform string
 
@@ -41,9 +42,11 @@ type GenerationSummary struct {
 
 // GeneratedArtifact captures the origin of a created wallet artifact.
 type GeneratedArtifact struct {
-	TicketID string
-	Platform Platform
-	FileName string
+	TicketID         string
+	Platform         Platform
+	FileName         string
+	Email            string
+	FullArtifactPath string
 }
 
 // WalletTicketSyncer orchestrates fetching tickets, generating wallet passes, and persisting artifacts.
@@ -54,13 +57,13 @@ type WalletTicketSyncer struct {
 	ArtifactSink   artifactSink               `validate:"required"`
 	TicketStatus   string                     `validate:"required"`
 	DB             *gorm.DB
+	appConfig      pkg.AppConfig `validate:"required"`
 }
 
 // TODO: fix validation stack overflow
 // var validate = validator.New(validator.WithRequiredStructEnabled())
 
 // NewWalletTicketSyncer wires default dependencies based on the provided configuration.
-
 func NewWalletTicketSyncer(ctx context.Context, cfg pkg.AppConfig, conn *gorm.DB) (*WalletTicketSyncer, error) {
 	ticketCfg, err := tickets.NewTicketTailorConfig(cfg)
 	if err != nil {
@@ -84,6 +87,7 @@ func NewWalletTicketSyncer(ctx context.Context, cfg pkg.AppConfig, conn *gorm.DB
 		ArtifactSink:   sink,
 		TicketStatus:   defaultTicketStatus,
 		DB:             conn,
+		appConfig:      cfg,
 	}
 	// TODO: fix this validator
 	// err = validate.Struct(out)
@@ -131,18 +135,37 @@ func (g *WalletTicketSyncer) SyncTickets(ctx context.Context) (GenerationSummary
 		return GenerationSummary{}, fmt.Errorf("generating tickets: %w", err)
 	}
 
+	dialer := mailer.NewGoMailDialer(
+		"smtp.mail.me.com",
+		587,
+		"adesaintmalo@icloud.com",
+		g.appConfig.ApplePassword,
+	)
+
 	// TODO: this should be from the created, not from the tickets
 	logger.Logger.Debug(
 		"Marking ticket as ticket created",
 		zap.Int("count", len(created)),
 	)
-	for _, v := range tickets {
+
+	for _, v := range created {
 		logger.Logger.Debug(
 			"Fetched tickets batch",
 			zap.String("event_id", g.ticketConfig.EventId),
 			zap.Int("count", len(ticketsBatch)),
 		)
-		db.SetPassProduced(ctx, g.DB, db.AppleWalletChannel, v.ID, v.Email, time.Now())
+		db.SetPassProduced(ctx, g.DB, db.AppleWalletChannel, v.TicketID, v.Email, time.Now())
+
+		err = mailer.SendAppleWalletEmail(
+			"adesaintmalo@icloud.com",
+			"adesaintmalo@icloud.com",
+			"Your Apple Wallet ticket",
+			dialer,
+			v.FullArtifactPath,
+		)
+		if err != nil {
+			logger.Logger.Fatal("sending ticket: %w", zap.Any("", err))
+		}
 	}
 
 	return GenerationSummary{Artifacts: created}, nil
@@ -205,7 +228,8 @@ func (g *WalletTicketSyncer) generateAndPersist(
 		return GeneratedArtifact{}, fmt.Errorf("generating %s wallet pass for ticket %s: %w", platform, ticket.ID, err)
 	}
 
-	if err := g.ArtifactSink(ctx, artifact); err != nil {
+	fullPath, err := g.ArtifactSink(ctx, artifact)
+	if err != nil {
 		return GeneratedArtifact{}, fmt.Errorf("persisting %s wallet artifact for ticket %s: %w", platform, ticket.ID, err)
 	}
 
@@ -216,9 +240,11 @@ func (g *WalletTicketSyncer) generateAndPersist(
 		zap.String("file_name", artifact.FileName),
 	)
 	return GeneratedArtifact{
-		TicketID: ticket.ID,
-		Platform: platform,
-		FileName: artifact.FileName,
+		TicketID:         ticket.ID,
+		Platform:         platform,
+		FileName:         artifact.FileName,
+		Email:            ticket.Email,
+		FullArtifactPath: fullPath,
 	}, nil
 }
 

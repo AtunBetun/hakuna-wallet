@@ -21,6 +21,8 @@ type AppConfig struct {
 	ApplePassTypeID string `env:"APPLE_PASS_TYPE_IDENTIFIER,required"`
 	AppleTeamID     string `env:"APPLE_TEAM_IDENTIFIER,required"`
 
+	ApplePassword string `env:"APPLE_PASSWORD,required"`
+
 	// App
 	BatchCron  string `env:"BATCH_CRON" envDefault:"@every 5m"`
 	DataDir    string `env:"DATA_DIR" envDefault:"/app/data"`
