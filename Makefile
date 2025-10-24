@@ -17,7 +17,7 @@ build:
 
 test:
 	@echo "Testing"
-	cd src && go test ./...
+	cd src/pkg && go test ./...
 
 # Clean up built files
 clean:
