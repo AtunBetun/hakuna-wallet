@@ -1,7 +1,10 @@
 package pkg
 
 import (
+	"os"
 	"time"
+
+	"github.com/atunbetun/hakuna-wallet/pkg/logger"
 )
 
 type AppConfig struct {
@@ -37,4 +40,13 @@ type AppConfig struct {
 	DatabaseConnMaxIdleTime      time.Duration `env:"DATABASE_CONN_MAX_IDLE_TIME" envDefault:"15m"`
 	DatabaseLogLevel             string        `env:"DATABASE_LOG_LEVEL" envDefault:"warn"`
 	DatabasePreferSimpleProtocol bool          `env:"DATABASE_PREFER_SIMPLE_PROTOCOL" envDefault:"false"`
+}
+
+func ShouldLoadDotenv() bool {
+	env, found := os.LookupEnv("APP_ENV")
+	if found && env == "prod" {
+		logger.Logger.Info("Not loading .env")
+		return false
+	}
+	return true
 }

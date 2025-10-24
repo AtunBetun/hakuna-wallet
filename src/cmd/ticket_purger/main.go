@@ -33,7 +33,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	err := batch.GenerateTickets(ctx, cfg)
+	err := batch.PurgeTickets(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}

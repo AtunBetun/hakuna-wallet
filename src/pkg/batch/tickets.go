@@ -11,19 +11,19 @@ import (
 	"go.uber.org/zap"
 )
 
-func PurgeTickets(ctx context.Context, cfg pkg.AppConfig) {
+func PurgeTickets(ctx context.Context, cfg pkg.AppConfig) error {
 	ticketTailorConfig, err := tickets.NewTicketTailorConfig(cfg)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = ticketTailorConfig.Validate()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	tick, err := tickets.FetchAllIssuedTickets(ctx, ticketTailorConfig, "")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	logger.Logger.Debug("Count", zap.Any("tick count", len(tick)))
@@ -33,6 +33,7 @@ func PurgeTickets(ctx context.Context, cfg pkg.AppConfig) {
 		logger.Logger.Debug(fmt.Sprintf("%s ticket, loop: %d", check, i), zap.Any("ticketId", v.ID))
 		tickets.CheckInTicket(ctx, ticketTailorConfig, v.ID, check)
 	}
+	return nil
 }
 
 func GenerateTickets(ctx context.Context, cfg pkg.AppConfig) error {
