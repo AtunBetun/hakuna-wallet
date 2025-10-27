@@ -2,8 +2,8 @@ package batch
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/atunbetun/hakuna-wallet/pkg"
@@ -162,17 +162,19 @@ func (g *walletTicketSyncer) SyncTickets(ctx context.Context) (GenerationSummary
 		zap.String("event_id", g.ticketConfig.EventId),
 		zap.Int("count", len(ticketsBatch)),
 	)
-	errs := []error{}
+	var wg sync.WaitGroup
 	for _, v := range created {
-		err = g.processTicket(ctx, v)
-		if err != nil {
-			logger.Logger.Error("processing tickeet", zap.Error(err))
-			errs = append(errs, err)
-		}
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			err = g.processTicket(ctx, v)
+			if err != nil {
+				logger.Logger.Error("processing tickeet", zap.Error(err))
+			}
+		}(&wg)
 	}
-	if len(errs) != 0 {
-		return GenerationSummary{}, errors.Join(errs...)
-	}
+	wg.Wait()
+	// TODO: add error handling from the parallel piece
 
 	return GenerationSummary{Artifacts: created}, nil
 }
