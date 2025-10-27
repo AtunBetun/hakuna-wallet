@@ -26,10 +26,6 @@ type AppConfig struct {
 
 	ApplePassword string `env:"APPLE_PASSWORD,required"`
 
-	// App
-	BatchCron  string `env:"BATCH_CRON" envDefault:"@every 5m"`
-	DataDir    string `env:"DATA_DIR" envDefault:"/app/data"`
-	Port       int    `env:"PORT" envDefault:"8080"`
 	TicketsDir string `env:"TICKETS_DIR" envDefault:"tickets"`
 
 	// Database (raw inputs)
@@ -40,6 +36,12 @@ type AppConfig struct {
 	DatabaseConnMaxIdleTime      time.Duration `env:"DATABASE_CONN_MAX_IDLE_TIME" envDefault:"15m"`
 	DatabaseLogLevel             string        `env:"DATABASE_LOG_LEVEL" envDefault:"warn"`
 	DatabasePreferSimpleProtocol bool          `env:"DATABASE_PREFER_SIMPLE_PROTOCOL" envDefault:"false"`
+
+	// Aws
+	S3Bucket           string `env:"S3_BUCKET,required" envDefault:"hakuna-use1"`
+	AwsRegion          string `env:"AWS_REGION,required" envDefault:"us-east-1"`
+	awsAccessKey       string `env:"AWS_ACCESS_KEY,required"`
+	awsSecretAccessKey string `env:"AWS_SECRET_ACCESS_KEY,required"`
 }
 
 func ShouldLoadDotenv() bool {

@@ -81,7 +81,7 @@ func FetchIssuedTickets(
 	if err != nil {
 		return nil, err
 	}
-	logger.Logger.Debug("TT Issued Tickets", zap.Any("data", ttResp.Data))
+	// logger.Logger.Debug("TT Issued Tickets", zap.Any("data", ttResp.Data))
 
 	return ttResp.Data, nil
 }

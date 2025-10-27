@@ -75,8 +75,6 @@ func FromAppConfig(cfg pkg.AppConfig) (DatabaseConfig, error) {
 		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL must include valid port, got %q", port)
 	}
 
-	fmt.Println("HERE")
-
 	database := DatabaseConfig{
 		DSN:                  cfg.DatabaseURL,
 		MaxOpenConns:         maxOpen,
@@ -89,7 +87,6 @@ func FromAppConfig(cfg pkg.AppConfig) (DatabaseConfig, error) {
 		Port:                 port,
 		SSLMode:              sslmode,
 	}
-	fmt.Println("THERE")
 	fmt.Printf("%+v", database)
 
 	err = validate.Struct(database)

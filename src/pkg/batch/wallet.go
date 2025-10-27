@@ -2,15 +2,19 @@ package batch
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/atunbetun/hakuna-wallet/pkg"
+	"github.com/atunbetun/hakuna-wallet/pkg/aws"
 	"github.com/atunbetun/hakuna-wallet/pkg/db"
 	"github.com/atunbetun/hakuna-wallet/pkg/logger"
-	"github.com/atunbetun/hakuna-wallet/pkg/mailer"
 	"github.com/atunbetun/hakuna-wallet/pkg/tickets"
 	"github.com/atunbetun/hakuna-wallet/pkg/wallet"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -49,22 +53,22 @@ type GeneratedArtifact struct {
 	FullArtifactPath string
 }
 
-// WalletTicketSyncer orchestrates fetching tickets, generating wallet passes, and persisting artifacts.
-type WalletTicketSyncer struct {
+// walletTicketSyncer orchestrates fetching tickets, generating wallet passes, and persisting artifacts.
+type walletTicketSyncer struct {
 	ticketConfig   tickets.TicketTailorConfig `validate:"required"`
 	TicketFetcher  ticketFetcher              `validate:"required"`
 	AppleGenerator passGenerator              `validate:"required"`
 	ArtifactSink   artifactSink               `validate:"required"`
 	TicketStatus   string                     `validate:"required"`
-	DB             *gorm.DB
-	appConfig      pkg.AppConfig `validate:"required"`
+	AppConfig      pkg.AppConfig              `validate:"required"`
+	DB             *gorm.DB                   `validate:"-"`
+	S3Client       *aws.S3Client              `validate:"required"`
 }
 
-// TODO: fix validation stack overflow
-// var validate = validator.New(validator.WithRequiredStructEnabled())
+var validate = validator.New(validator.WithRequiredStructEnabled())
 
 // NewWalletTicketSyncer wires default dependencies based on the provided configuration.
-func NewWalletTicketSyncer(ctx context.Context, cfg pkg.AppConfig, conn *gorm.DB) (*WalletTicketSyncer, error) {
+func NewWalletTicketSyncer(ctx context.Context, cfg pkg.AppConfig, conn *gorm.DB) (*walletTicketSyncer, error) {
 	ticketCfg, err := tickets.NewTicketTailorConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -80,25 +84,35 @@ func NewWalletTicketSyncer(ctx context.Context, cfg pkg.AppConfig, conn *gorm.DB
 		return nil, err
 	}
 
-	out := &WalletTicketSyncer{
+	awsConfig, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return &walletTicketSyncer{}, err
+	}
+
+	s3, err := aws.NewS3Client(cfg.S3Bucket, &awsConfig)
+	if err != nil {
+		return &walletTicketSyncer{}, err
+	}
+
+	out := &walletTicketSyncer{
 		ticketConfig:   ticketCfg,
 		TicketFetcher:  newTicketTailorTicketFetcher(), // TODO: remove this
 		AppleGenerator: appleGen,
 		ArtifactSink:   sink,
 		TicketStatus:   defaultTicketStatus,
 		DB:             conn,
-		appConfig:      cfg,
+		AppConfig:      cfg,
+		S3Client:       s3,
 	}
-	// TODO: fix this validator
-	// err = validate.Struct(out)
-	// if err != nil {
-	// 	return &WalletTicketSyncer{}, err
-	// }
+	err = validate.Struct(out)
+	if err != nil {
+		return &walletTicketSyncer{}, err
+	}
 	return out, err
 }
 
 // SyncTickets executes the ticket ingestion flow, returning a summary of created artifacts.
-func (g *WalletTicketSyncer) SyncTickets(ctx context.Context) (GenerationSummary, error) {
+func (g *walletTicketSyncer) SyncTickets(ctx context.Context) (GenerationSummary, error) {
 	if g.TicketFetcher == nil {
 		return GenerationSummary{}, fmt.Errorf("ticket fetcher is not configured")
 	}
@@ -135,41 +149,85 @@ func (g *WalletTicketSyncer) SyncTickets(ctx context.Context) (GenerationSummary
 		return GenerationSummary{}, fmt.Errorf("generating tickets: %w", err)
 	}
 
-	dialer := mailer.NewAppleMailDialer(
-		"smtp.mail.me.com",
-		587,
-		"adesaintmalo@icloud.com",
-		g.appConfig.ApplePassword,
-	)
+	// _ = mailer.NewAppleMailDialer(
+	// 	"smtp.mail.me.com",
+	// 	587,
+	// 	"adesaintmalo@icloud.com",
+	// 	g.AppConfig.ApplePassword,
+	// )
 
 	// TODO: this should be from the created, not from the tickets
+
 	logger.Logger.Debug(
-		"Marking ticket as ticket created",
-		zap.Int("count", len(created)),
+		"Fetched tickets batch",
+		zap.String("event_id", g.ticketConfig.EventId),
+		zap.Int("count", len(ticketsBatch)),
 	)
-
+	errs := []error{}
 	for _, v := range created {
-		logger.Logger.Debug(
-			"Fetched tickets batch",
-			zap.String("event_id", g.ticketConfig.EventId),
-			zap.Int("count", len(ticketsBatch)),
-		)
-		db.SetPassProduced(ctx, g.DB, db.AppleWalletChannel, v.TicketID, v.Email, time.Now())
-
-		err = mailer.SendAppleWalletEmail(
-			"adesaintmalo@icloud.com",
-			"adesaintmalo@icloud.com",
-			"Your Apple Wallet ticket",
-			dialer,
-			v.FullArtifactPath,
-		)
+		err = g.processTicket(ctx, v)
 		if err != nil {
-			logger.Logger.Fatal("sending ticket: %w", zap.Any("", err))
+			logger.Logger.Error("processing tickeet", zap.Error(err))
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) != 0 {
+		return GenerationSummary{}, errors.Join(errs...)
 	}
 
 	return GenerationSummary{Artifacts: created}, nil
 }
+
+func (g *walletTicketSyncer) processTicket(
+	ctx context.Context,
+	artifact GeneratedArtifact,
+) error {
+	logger.Logger.Debug(
+		"Marking ticket as ticket created",
+	)
+	err := db.SetPassProduced(
+		ctx,
+		g.DB,
+		db.AppleWalletChannel,
+		artifact.TicketID,
+		artifact.Email,
+		time.Now(),
+	)
+	if err != nil {
+		logger.Logger.Fatal("setting pass produced: %w", zap.Any("", err))
+		return err
+	}
+
+	logger.Logger.Debug(
+		"Uploading to s3",
+		zap.String("event_id", g.ticketConfig.EventId),
+	)
+	_, err = g.S3Client.UploadFile(
+		ctx,
+		g.AppConfig.S3Bucket,
+		ticketKey(artifact.FileName),
+		artifact.FullArtifactPath,
+	)
+	if err != nil {
+		logger.Logger.Fatal("uploading file: %w", zap.Any("", err))
+		return err
+	}
+	_, err = g.S3Client.PresignURLDefault(
+		ctx,
+		g.AppConfig.S3Bucket,
+		ticketKey(artifact.FileName),
+	)
+	if err != nil {
+		logger.Logger.Fatal("presign url: %w", zap.Any("", err))
+		return err
+	}
+	return nil
+}
+func ticketKey(ticketName string) string {
+	key := "ham-2026/apple-wallet/" + ticketName
+	return key
+}
+
 func ticketsForSync(
 	ticketsBatch []tickets.TTIssuedTicket,
 	currentTickets map[string]db.PassRecord,
@@ -184,7 +242,7 @@ func ticketsForSync(
 	return missing
 }
 
-func (g *WalletTicketSyncer) generateTickets(
+func (g *walletTicketSyncer) generateTickets(
 	ctx context.Context,
 	ticketsBatch []tickets.TTIssuedTicket,
 ) (
@@ -212,7 +270,7 @@ func (g *WalletTicketSyncer) generateTickets(
 	return created, nil
 }
 
-func (g *WalletTicketSyncer) generateAndPersist(
+func (g *walletTicketSyncer) generateAndPersist(
 	ctx context.Context,
 	generator passGenerator,
 	ticket tickets.TTIssuedTicket,
